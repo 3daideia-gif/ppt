@@ -5,18 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Batalha Pedra Papel Tesoura</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        canvas { background: #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px; cursor: crosshair; }
-        #controles { color: white; padding: 15px; text-align: center; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #2ecc71; border: none; color: white; border-radius: 5px; font-weight: bold; }
-        button:hover { background: #27ae60; }
+        body { 
+            margin: 0; 
+            /* Mudamos de hidden para auto para permitir o scroll se necessário */
+            overflow-y: auto; 
+            background: #222; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            min-height: 100vh;
+        }
+        canvas { 
+            background: #333; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
+            margin-top: 20px; 
+            margin-bottom: 30px; /* Espaço extra na parte de baixo */
+            cursor: crosshair; 
+            max-width: 95vw; /* Garante que não estoure a largura em celulares */
+        }
+        #controles { 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+        }
+        button { 
+            padding: 12px 24px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            background: #2ecc71; 
+            border: none; 
+            color: white; 
+            border-radius: 5px; 
+            font-weight: bold; 
+            transition: background 0.3s;
+        }
+        button:hover { 
+            background: #27ae60; 
+        }
+        #placar {
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div id="controles">
         <h2>Simulação Jokenpô</h2>
-        <button id="btnIniciar">Iniciar Batalha</button>
+        <button id="btnIniciar">Reiniciar Batalha</button>
         <p id="placar">Pedra: 20 | Papel: 20 | Tesoura: 20</p>
     </div>
 
@@ -28,7 +65,7 @@ const ctx = canvas.getContext('2d');
 const btnIniciar = document.getElementById('btnIniciar');
 const placar = document.getElementById('placar');
 
-// Configurações
+// Configurações adaptáveis
 const TAMANHO_ICONE = 24;
 const VELOCIDADE = 2;
 const TOTAL_CADA = 20;
@@ -37,17 +74,21 @@ const ICONES = { pedra: '🪨', papel: '📄', tesoura: '✂️' };
 let entidades = [];
 let animando = false;
 
-// Redimensionar canvas
-canvas.width = 800;
-canvas.height = 500;
+// Ajuste automático do tamanho do canvas
+function ajustarCanvas() {
+    canvas.width = Math.min(800, window.innerWidth * 0.9);
+    canvas.height = Math.min(500, window.innerHeight * 0.6);
+}
+
+ajustarCanvas();
 
 class Entidade {
     constructor(tipo, x, y) {
-        this.tipo = tipo; // 'pedra', 'papel' ou 'tesoura'
+        this.tipo = tipo; 
         this.x = x;
         this.y = y;
-        this.vx = (Math.random() - 0.5) * VELOCIDADE * 2;
-        this.vy = (Math.random() - 0.5) * VELOCIDADE * 2;
+        this.vx = (Math.random() - 0.5) * VELOCIDADE * 3;
+        this.vy = (Math.random() - 0.5) * VELOCIDADE * 3;
     }
 
     desenhar() {
@@ -61,9 +102,13 @@ class Entidade {
         this.x += this.vx;
         this.y += this.vy;
 
-        // Bater nas bordas
-        if (this.x < 10 || this.x > canvas.width - 10) this.vx *= -1;
-        if (this.y < 10 || this.y > canvas.height - 10) this.vy *= -1;
+        // Colisão com bordas
+        if (this.x < 15 || this.x > canvas.width - 15) this.vx *= -1;
+        if (this.y < 15 || this.y > canvas.height - 15) this.vy *= -1;
+        
+        // Garantir que não saiam do canvas
+        this.x = Math.max(15, Math.min(canvas.width - 15, this.x));
+        this.y = Math.max(15, Math.min(canvas.height - 15, this.y));
     }
 }
 
@@ -75,11 +120,12 @@ function inicializar() {
         for (let i = 0; i < TOTAL_CADA; i++) {
             entidades.push(new Entidade(
                 tipo, 
-                Math.random() * (canvas.width - 40) + 20, 
-                Math.random() * (canvas.height - 40) + 20
+                Math.random() * (canvas.width - 60) + 30, 
+                Math.random() * (canvas.height - 60) + 30
             ));
         }
     });
+    atualizarPlacar();
 }
 
 function verificarColisoes() {
@@ -94,9 +140,13 @@ function verificarColisoes() {
 
             if (distancia < TAMANHO_ICONE) {
                 resolverCombate(a, b);
-                // Pequeno empurrão para não grudarem
-                a.vx *= -1; a.vy *= -1;
-                b.vx *= -1; b.vy *= -1;
+                // Inverter direção para efeito de ricochete
+                let tempVx = a.vx;
+                let tempVy = a.vy;
+                a.vx = b.vx;
+                a.vy = b.vy;
+                b.vx = tempVx;
+                b.vy = tempVy;
             }
         }
     }
@@ -106,15 +156,15 @@ function resolverCombate(a, b) {
     if (a.tipo === b.tipo) return;
 
     const regras = {
-        pedra: 'tesoura', // pedra ganha de tesoura
-        papel: 'pedra',   // papel ganha de pedra
-        tesoura: 'papel'  // tesoura ganha de papel
+        pedra: 'tesoura', 
+        papel: 'pedra',   
+        tesoura: 'papel'  
     };
 
     if (regras[a.tipo] === b.tipo) {
-        b.tipo = a.tipo; // B vira o tipo de A
+        b.tipo = a.tipo; 
     } else {
-        a.tipo = b.tipo; // A vira o tipo de B
+        a.tipo = b.tipo; 
     }
     atualizarPlacar();
 }
@@ -124,10 +174,11 @@ function atualizarPlacar() {
     entidades.forEach(e => contagem[e.tipo]++);
     placar.innerText = `Pedra: ${contagem.pedra} | Papel: ${contagem.papel} | Tesoura: ${contagem.tesoura}`;
     
-    // Checar se alguém venceu tudo
-    if (contagem.pedra === 60 || contagem.papel === 60 || contagem.tesoura === 60) {
+    const total = TOTAL_CADA * 3;
+    if (contagem.pedra === total || contagem.papel === total || contagem.tesoura === total) {
         animando = false;
-        alert("Temos um vencedor!");
+        const vencedor = contagem.pedra === total ? "PEDRA" : contagem.papel === total ? "PAPEL" : "TESOURA";
+        setTimeout(() => alert(`Fim de jogo! ${vencedor} dominou o mundo!`), 100);
     }
 }
 
@@ -145,17 +196,12 @@ function loop() {
 }
 
 btnIniciar.onclick = () => {
-    inicializar();
-    if (!animando) {
+    animando = false; // Para o loop atual se existir
+    setTimeout(() => {
+        inicializar();
         animando = true;
         loop();
-    }
+    }, 10);
 };
 
-// Desenhar estado inicial
-inicializar();
-entidades.forEach(e => e.desenhar());
-
-</script>
-</body>
-</html>
+//
