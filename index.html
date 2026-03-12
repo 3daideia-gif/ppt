@@ -3,28 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batalha Jokenpô - Compatível</title>
+    <title>Batalha Jokenpô Custom</title>
     <style>
         body { 
             margin: 0; 
-            overflow-y: auto; 
             background: #1a1a1a; 
             font-family: sans-serif; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            min-height: 100vh;
             color: white;
         }
         canvas { 
             background: #222; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.7); 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
             margin: 20px 0;
             border-radius: 8px;
             max-width: 95vw;
         }
-        #controles { padding: 20px; text-align: center; }
-        .botoes { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+        .botoes { display: flex; gap: 10px; margin-bottom: 15px; }
         button { 
             padding: 12px 25px; 
             font-size: 16px; 
@@ -32,7 +29,7 @@
             border: none; 
             color: white; 
             border-radius: 5px; 
-            font-weight: bold; 
+            font-weight: bold;
         }
         #btnIniciar { background: #2ecc71; }
         #btnResetar { background: #e74c3c; }
@@ -46,7 +43,7 @@
 </head>
 <body>
 
-    <div id="controles">
+    <div id="controles" style="text-align:center">
         <h2>Simulação Jokenpô</h2>
         <div class="botoes">
             <button id="btnIniciar">🚀 Iniciar</button>
@@ -64,16 +61,10 @@ const btnIniciar = document.getElementById('btnIniciar');
 const btnResetar = document.getElementById('btnResetar');
 const placar = document.getElementById('placar');
 
-const RAIO_ENTIDADE = 12;
-const VELOCIDADE = 2.5;
-const TOTAL_CADA = 18;
-
-// Definimos cores e letras para substituir os emojis
-const CONFIG = {
-    pedra: { char: 'R', cor: '#95a5a6', nome: 'Pedra' },   // R de Rock
-    papel: { char: 'P', cor: '#ecf0f1', nome: 'Papel' },   // P de Papel
-    tesoura: { char: 'T', cor: '#f1c40f', nome: 'Tesoura' } // T de Tesoura
-};
+// CONFIGURAÇÕES
+const RAIO = 15;        // Tamanho dos desenhos
+const VELOCIDADE = 1.2; // Bem mais lento como pedido
+const TOTAL_CADA = 15;  // Quantidade de cada um
 
 let entidades = [];
 let animando = false;
@@ -86,101 +77,4 @@ function ajustarCanvas() {
 ajustarCanvas();
 
 class Entidade {
-    constructor(tipo) {
-        this.tipo = tipo; 
-        this.x = Math.random() * (canvas.width - RAIO_ENTIDADE * 2) + RAIO_ENTIDADE;
-        this.y = Math.random() * (canvas.height - RAIO_ENTIDADE * 2) + RAIO_ENTIDADE;
-        const angulo = Math.random() * Math.PI * 2;
-        this.vx = Math.cos(angulo) * VELOCIDADE;
-        this.vy = Math.sin(angulo) * VELOCIDADE;
-    }
-
-    desenhar() {
-        // Desenha o círculo de fundo
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, RAIO_ENTIDADE, 0, Math.PI * 2);
-        ctx.fillStyle = CONFIG[this.tipo].cor;
-        ctx.fill();
-        ctx.closePath();
-
-        // Desenha a letra
-        ctx.fillStyle = "#000";
-        ctx.font = "bold 14px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(CONFIG[this.tipo].char, this.x, this.y);
-    }
-
-    atualizar() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.x <= RAIO_ENTIDADE || this.x >= canvas.width - RAIO_ENTIDADE) this.vx *= -1;
-        if (this.y <= RAIO_ENTIDADE || this.y >= canvas.height - RAIO_ENTIDADE) this.vy *= -1;
-    }
-}
-
-function inicializar() {
-    cancelAnimationFrame(animationId);
-    animando = false;
-    entidades = [];
-    ['pedra', 'papel', 'tesoura'].forEach(tipo => {
-        for (let i = 0; i < TOTAL_CADA; i++) entidades.push(new Entidade(tipo));
-    });
-    atualizarPlacar();
-    render();
-}
-
-function verificarColisoes() {
-    for (let i = 0; i < entidades.length; i++) {
-        for (let j = i + 1; j < entidades.length; j++) {
-            let a = entidades[i];
-            let b = entidades[j];
-            let dx = a.x - b.x;
-            let dy = a.y - b.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-
-            if (dist < RAIO_ENTIDADE * 2) {
-                const regras = { pedra: 'tesoura', papel: 'pedra', tesoura: 'papel' };
-                if (a.tipo !== b.tipo) {
-                    if (regras[a.tipo] === b.tipo) b.tipo = a.tipo;
-                    else a.tipo = b.tipo;
-                    atualizarPlacar();
-                }
-                [a.vx, b.vx] = [b.vx, a.vx];
-                [a.vy, b.vy] = [b.vy, a.vy];
-            }
-        }
-    }
-}
-
-function atualizarPlacar() {
-    const cont = { pedra: 0, papel: 0, tesoura: 0 };
-    entidades.forEach(e => cont[e.tipo]++);
-    placar.innerHTML = `Pedra: ${cont.pedra} | Papel: ${cont.papel} | Tesoura: ${cont.tesoura}`;
-    
-    if (animando && (cont.pedra === 54 || cont.papel === 54 || cont.tesoura === 54)) {
-        animando = false;
-        alert("Fim da batalha!");
-    }
-}
-
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    entidades.forEach(e => e.desenhar());
-}
-
-function loop() {
-    if (!animando) return;
-    render();
-    entidades.forEach(e => e.atualizar());
-    verificarColisoes();
-    animationId = requestAnimationFrame(loop);
-}
-
-btnIniciar.onclick = () => { animando = true; loop(); };
-btnResetar.onclick = () => inicializar();
-
-inicializar();
-</script>
-</body>
-</html>
+    constructor(tipo
