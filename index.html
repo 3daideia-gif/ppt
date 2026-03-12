@@ -3,110 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batalha Jokenpô Moderna</title>
+    <title>Batalha Jokenpô - Versão Final</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --cor-pedra: #bdc3c7; /* Cinza claro metálico */
-            --cor-papel: #ecf0f1; /* Branco papel */
-            --cor-tesoura: #f1c40f; /* Amarelo ouro */
-            --cor-fundo-site: #121212;
-            --cor-fundo-canvas: #1e1e1e;
-            --cor-ui: #2c3e50;
+            --pedra: #95a5a6; --papel: #ffffff; --tesoura: #f1c40f;
+            --bg: #121212; --canvas-bg: #1e1e1e;
         }
-
         body { 
-            margin: 0; 
-            background: var(--cor-fundo-site); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            color: #ecf0f1;
-            min-height: 100vh;
+            margin: 0; background: var(--bg); color: white;
+            font-family: 'Segoe UI', sans-serif; display: flex; 
+            flex-direction: column; align-items: center; min-height: 100vh;
         }
-
-        #ui-jogo {
-            text-align: center;
-            padding: 30px 20px;
-            width: 100%;
-            max-width: 800px;
-        }
-
-        h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
-
-        .botoes { 
-            display: flex; 
-            gap: 15px; 
-            justify-content: center; 
-            margin-bottom: 25px; 
-        }
-
+        #ui { text-align: center; padding: 20px; width: 100%; max-width: 600px; }
+        .botoes { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
         button { 
-            padding: 12px 28px; 
-            font-size: 16px; 
-            cursor: pointer; 
-            border: none; 
-            color: white; 
-            border-radius: 6px; 
-            font-weight: bold;
-            transition: 0.2s ease-in-out;
+            padding: 12px 25px; font-size: 14px; cursor: pointer; border: none; 
+            color: white; border-radius: 8px; font-weight: bold; transition: 0.2s;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-
-        #btnIniciar { background: #2ecc71; }
-        #btnIniciar:hover { background: #27ae60; transform: translateY(-2px); }
-        #btnIniciar:active { transform: translateY(1px); }
-
-        #btnResetar { background: #e74c3c; }
-        #btnResetar:hover { background: #c0392b; transform: translateY(-2px); }
-        #btnResetar:active { transform: translateY(1px); }
+        #btnIniciar { background: #2ecc71; box-shadow: 0 4px #27ae60; }
+        #btnIniciar:hover { background: #27ae60; }
+        #btnIniciar:active { transform: translateY(2px); box-shadow: 0 2px #27ae60; }
+        #btnResetar { background: #e74c3c; box-shadow: 0 4px #c0392b; }
         
-        #bloco-placar {
-            background: var(--cor-ui);
-            padding: 15px 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-            font-size: 1.1rem;
+        #placar {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            background: #2c3e50; padding: 15px; border-radius: 12px; gap: 10px;
         }
-
-        .item-placar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Cores dos ícones no placar */
-        .icon-pedra { color: var(--cor-pedra); }
-        .icon-papel { color: var(--cor-papel); }
-        .icon-tesoura { color: var(--cor-tesoura); }
-
-        #gameCanvas { 
-            background: var(--cor-fundo-canvas); 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
-            border-radius: 15px;
-            max-width: 95vw;
-            margin-bottom: 30px;
+        canvas { 
+            background: var(--canvas-bg); border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 95vw;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-jogo">
+    <div id="ui">
         <h2>Simulação Jokenpô</h2>
         <div class="botoes">
-            <button id="btnIniciar"><i class="fas fa-play"></i> Iniciar</button>
-            <button id="btnResetar"><i class="fas fa-redo"></i> Resetar</button>
+            <button id="btnIniciar">🚀 Iniciar</button>
+            <button id="btnResetar">🔄 Resetar</button>
         </div>
-        <div id="bloco-placar">
-            <div class="item-placar"><i class="fas fa-hand-rock fa-lg icon-pedra"></i> <span id="qtd-pedra">0</span></div>
-            <div class="item-placar"><i class="fas fa-hand-paper fa-lg icon-papel"></i> <span id="qtd-papel">0</span></div>
-            <div class="item-placar"><i class="fas fa-hand-scissors fa-lg icon-tesoura"></i> <span id="qtd-tesoura">0</span></div>
+        <div id="placar">
+            <span>🪨 <span id="p-pedra">0</span></span>
+            <span>📄 <span id="p-papel">0</span></span>
+            <span>✂️ <span id="p-tesoura">0</span></span>
         </div>
     </div>
 
@@ -118,109 +60,119 @@ const ctx = canvas.getContext('2d');
 const btnIniciar = document.getElementById('btnIniciar');
 const btnResetar = document.getElementById('btnResetar');
 
-// Seletores do placar moderno
-const qtdPedra = document.getElementById('qtd-pedra');
-const qtdPapel = document.getElementById('qtd-papel');
-const qtdTesoura = document.getElementById('qtd-tesoura');
-
-// CONFIGURAÇÕES
-const TAMANHO_ICONE_CANVAS = 28;     
-const VELOCIDADE_LENTA = 1.0; 
-const TOTAL_CADA = 15;
+const TAMANHO = 28;
+const VELOCIDADE = 1.0; 
+const TOTAL = 15;
 
 let entidades = [];
 let animando = false;
 let animationId;
 
-function ajustarCanvas() {
-    // Canvas ligeiramente maior para melhor visualização
-    canvas.width = Math.min(900, window.innerWidth * 0.95);
-    canvas.height = Math.min(550, window.innerHeight * 0.65);
+// Códigos dos ícones FontAwesome
+const ICONES = { pedra: '\uf255', papel: '\uf256', tesoura: '\uf257' };
+
+function ajustar() {
+    canvas.width = Math.min(800, window.innerWidth * 0.95);
+    canvas.height = Math.min(500, window.innerHeight * 0.6);
 }
-window.addEventListener('resize', ajustarCanvas);
-ajustarCanvas();
+ajustar();
 
 class Entidade {
     constructor(tipo) {
         this.tipo = tipo;
-        this.raio = TAMANHO_ICONE_CANVAS / 2;
-        // Posicionamento aleatório inteligente evitando bordas
-        this.x = Math.random() * (canvas.width - TAMANHO_ICONE_CANVAS * 2) + this.raio;
-        this.y = Math.random() * (canvas.height - TAMANHO_ICONE_CANVAS * 2) + this.raio;
-        
-        const angulo = Math.random() * Math.PI * 2;
-        this.vx = Math.cos(angulo) * VELOCIDADE_LENTA;
-        this.vy = Math.sin(angulo) * VELOCIDADE_LENTA;
+        this.r = TAMANHO / 2;
+        this.x = Math.random() * (canvas.width - TAMANHO) + this.r;
+        this.y = Math.random() * (canvas.height - TAMANHO) + this.r;
+        const ang = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(ang) * VELOCIDADE;
+        this.vy = Math.sin(ang) * VELOCIDADE;
     }
-
     desenhar() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        
-        // Configurando a fonte do Font Awesome para o Canvas
-        ctx.font = `900 ${TAMANHO_ICONE_CANVAS}px "Font Awesome 6 Free"`;
+        ctx.font = `900 ${TAMANHO}px "Font Awesome 6 Free"`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-
-        // Definindo ícone e cor sólida com base no tipo
-        if (this.tipo === 'pedra') {
-            ctx.fillStyle = '#bdc3c7'; // Metal cinza
-            ctx.fillText('\uf255', 0, 0); // Código Unicode do fa-hand-rock
-        } else if (this.tipo === 'papel') {
-            ctx.fillStyle = '#ffffff'; // Branco puro
-            ctx.fillText('\uf256', 0, 0); // Código Unicode do fa-hand-paper
-        } else if (this.tipo === 'tesoura') {
-            ctx.fillStyle = '#f1c40f'; // Amarelo tesoura
-            ctx.fillText('\uf257', 0, 0); // Código Unicode do fa-hand-scissors
-        }
-        
-        ctx.restore();
+        ctx.fillStyle = this.tipo === 'pedra' ? '#95a5a6' : this.tipo === 'papel' ? '#fff' : '#f1c40f';
+        ctx.fillText(ICONES[this.tipo], this.x, this.y);
     }
-
-    atualizar() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Colisão com bordas com pequeno buffer
-        const buffer = this.raio * 0.8;
-        if (this.x <= buffer || this.x >= canvas.width - buffer) {
-            this.vx *= -1;
-            this.x = this.x <= buffer ? buffer : canvas.width - buffer;
-        }
-        if (this.y <= buffer || this.y >= canvas.height - buffer) {
-            this.vy *= -1;
-            this.y = this.y <= buffer ? buffer : canvas.height - buffer;
-        }
+    mover() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < this.r || this.x > canvas.width - this.r) this.vx *= -1;
+        if (this.y < this.r || this.y > canvas.height - this.r) this.vy *= -1;
     }
 }
 
 function inicializar() {
+    parar();
+    entidades = [];
+    ['pedra', 'papel', 'tesoura'].forEach(t => {
+        for(let i=0; i<TOTAL; i++) entidades.push(new Entidade(t));
+    });
+    atualizarPlacar();
+    render();
+}
+
+function parar() {
     animando = false;
     cancelAnimationFrame(animationId);
-    entidades = [];
-    ['pedra', 'papel', 'tesoura'].forEach(tipo => {
-        for (let i = 0; i < TOTAL_CADA; i++) entidades.push(new Entidade(tipo));
-    });
-    atualizarPlacar(true); // Modo inicial silencioso
-    render();
 }
 
 function verificarColisoes() {
     const regras = { pedra: 'tesoura', papel: 'pedra', tesoura: 'papel' };
-
     for (let i = 0; i < entidades.length; i++) {
         for (let j = i + 1; j < entidades.length; j++) {
-            let a = entidades[i];
-            let b = entidades[j];
-            let dx = a.x - b.x;
-            let dy = a.y - b.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-
-            // Colisão baseada no tamanho do ícone
-            if (dist < TAMANHO_ICONE_CANVAS * 0.9) {
-                // Combate
+            let a = entidades[i], b = entidades[j];
+            let dx = a.x - b.x, dy = a.y - b.y;
+            let d = Math.sqrt(dx*dx + dy*dy);
+            if (d < TAMANHO * 0.8) {
                 if (a.tipo !== b.tipo) {
                     if (regras[a.tipo] === b.tipo) b.tipo = a.tipo;
                     else a.tipo = b.tipo;
                     atualizarPlacar();
                 }
+                [a.vx, b.vx] = [b.vx, a.vx]; [a.vy, b.vy] = [b.vy, a.vy];
+            }
+        }
+    }
+}
+
+function atualizarPlacar() {
+    const c = { pedra: 0, papel: 0, tesoura: 0 };
+    entidades.forEach(e => c[e.tipo]++);
+    document.getElementById('p-pedra').innerText = c.pedra;
+    document.getElementById('p-papel').innerText = c.papel;
+    document.getElementById('p-tesoura').innerText = c.tesoura;
+    
+    if (animando && (c.pedra === 45 || c.papel === 45 || c.tesoura === 45)) {
+        parar();
+        alert("Batalha terminada!");
+    }
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    entidades.forEach(e => e.desenhar());
+}
+
+function loop() {
+    if (!animando) return;
+    render();
+    entidades.forEach(e => { e.mover(); });
+    verificarColisoes();
+    animationId = requestAnimationFrame(loop);
+}
+
+btnIniciar.onclick = () => {
+    if (animando) return;
+    animando = true;
+    loop();
+};
+
+btnResetar.onclick = () => inicializar();
+
+// ESPERA A FONTE CARREGAR ANTES DE MOSTRAR TUDO
+document.fonts.ready.then(() => {
+    inicializar();
+});
+</script>
+</body>
+</html>
