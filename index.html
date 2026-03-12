@@ -3,53 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batalha Jokenpô Custom</title>
+    <title>Batalha Jokenpô Profissional</title>
     <style>
         body { 
             margin: 0; 
             background: #1a1a1a; 
-            font-family: sans-serif; 
+            font-family: 'Segoe UI', sans-serif; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
             color: white;
+            min-height: 100vh;
         }
-        canvas { 
-            background: #222; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
-            margin: 20px 0;
-            border-radius: 8px;
-            max-width: 95vw;
-        }
-        .botoes { display: flex; gap: 10px; margin-bottom: 15px; }
+        #controles { padding: 20px; text-align: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; }
         button { 
-            padding: 12px 25px; 
+            padding: 12px 30px; 
             font-size: 16px; 
             cursor: pointer; 
             border: none; 
             color: white; 
-            border-radius: 5px; 
+            border-radius: 8px; 
             font-weight: bold;
+            transition: 0.2s;
         }
-        #btnIniciar { background: #2ecc71; }
-        #btnResetar { background: #e74c3c; }
+        #btnIniciar { background: #2ecc71; box-shadow: 0 4px #27ae60; }
+        #btnIniciar:active { box-shadow: 0 0; transform: translateY(4px); }
+        #btnResetar { background: #e74c3c; box-shadow: 0 4px #c0392b; }
+        #btnResetar:active { box-shadow: 0 0; transform: translateY(4px); }
+        
+        canvas { 
+            background: #2c3e50; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            border-radius: 12px;
+            max-width: 95vw;
+        }
         #placar {
-            font-size: 1.2rem;
-            background: rgba(255,255,255,0.1);
-            padding: 10px 20px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            background: #34495e;
+            padding: 10px 25px;
             border-radius: 50px;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
-    <div id="controles" style="text-align:center">
+    <div id="controles">
         <h2>Simulação Jokenpô</h2>
         <div class="botoes">
-            <button id="btnIniciar">🚀 Iniciar</button>
-            <button id="btnResetar">🔄 Resetar</button>
+            <button id="btnIniciar">INICIAR</button>
+            <button id="btnResetar">RESETAR</button>
         </div>
-        <p id="placar">Carregando...</p>
+        <div id="placar">Pedra: 0 | Papel: 0 | Tesoura: 0</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -62,13 +69,20 @@ const btnResetar = document.getElementById('btnResetar');
 const placar = document.getElementById('placar');
 
 // CONFIGURAÇÕES
-const RAIO = 15;        // Tamanho dos desenhos
-const VELOCIDADE = 1.2; // Bem mais lento como pedido
-const TOTAL_CADA = 15;  // Quantidade de cada um
+const TAMANHO = 30;     
+const VELOCIDADE = 1.0; // Velocidade lenta e constante
+const TOTAL_CADA = 15;
 
 let entidades = [];
 let animando = false;
 let animationId;
+
+// Criando as imagens via Path2D (Desenhos reais)
+const ICONES = {
+    pedra: new Path2D('M15 5c-6 0-10 4-10 10s4 10 10 10 10-4 10-10-4-10-10-10zm-2 14h-2v-2h2v2zm4-4h-6v-2h6v2zm0-4h-6V9h6v2z'),
+    papel: new Path2D('M8 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v16h12V4H8zm2 4h8v2h-8V8zm0 4h8v2h-8v-2zm0 4h5v2h-5v-2z'),
+    tesoura: new Path2D('M19 3l-6 6 2 2 7-7v-1h-3zM5.5 16a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm0 5.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM19 21a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm0-5.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM9 13l-4-4-2 2 6 6 2-2z')
+};
 
 function ajustarCanvas() {
     canvas.width = Math.min(800, window.innerWidth * 0.95);
@@ -77,4 +91,131 @@ function ajustarCanvas() {
 ajustarCanvas();
 
 class Entidade {
-    constructor(tipo
+    constructor(tipo) {
+        this.tipo = tipo;
+        this.raio = TAMANHO / 2;
+        this.resetPosicao();
+        
+        const angulo = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angulo) * VELOCIDADE;
+        this.vy = Math.sin(angulo) * VELOCIDADE;
+    }
+
+    resetPosicao() {
+        this.x = Math.random() * (canvas.width - TAMANHO) + this.raio;
+        this.y = Math.random() * (canvas.height - TAMANHO) + this.raio;
+    }
+
+    desenhar() {
+        ctx.save();
+        ctx.translate(this.x - 15, this.y - 15); // Centraliza o Path
+        ctx.scale(1.2, 1.2);
+        
+        // Cores sólidas para visibilidade
+        if (this.tipo === 'pedra') ctx.fillStyle = '#95a5a6';
+        if (this.tipo === 'papel') ctx.fillStyle = '#ffffff';
+        if (this.tipo === 'tesoura') ctx.fillStyle = '#f1c40f';
+        
+        ctx.fill(ICONES[this.tipo]);
+        ctx.restore();
+    }
+
+    atualizar() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x <= this.raio || this.x >= canvas.width - this.raio) {
+            this.vx *= -1;
+            this.x = this.x <= this.raio ? this.raio : canvas.width - this.raio;
+        }
+        if (this.y <= this.raio || this.y >= canvas.height - this.raio) {
+            this.vy *= -1;
+            this.y = this.y <= this.raio ? this.raio : canvas.height - this.raio;
+        }
+    }
+}
+
+function inicializar() {
+    animando = false;
+    cancelAnimationFrame(animationId);
+    entidades = [];
+    ['pedra', 'papel', 'tesoura'].forEach(tipo => {
+        for (let i = 0; i < TOTAL_CADA; i++) entidades.push(new Entidade(tipo));
+    });
+    atualizarPlacar();
+    render();
+}
+
+function verificarColisoes() {
+    const regras = { pedra: 'tesoura', papel: 'pedra', tesoura: 'papel' };
+
+    for (let i = 0; i < entidades.length; i++) {
+        for (let j = i + 1; j < entidades.length; j++) {
+            let a = entidades[i];
+            let b = entidades[j];
+            let dx = a.x - b.x;
+            let dy = a.y - b.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist < TAMANHO - 5) {
+                // Combate
+                if (a.tipo !== b.tipo) {
+                    if (regras[a.tipo] === b.tipo) b.tipo = a.tipo;
+                    else a.tipo = b.tipo;
+                    atualizarPlacar();
+                }
+
+                // Ricochete
+                [a.vx, b.vx] = [b.vx, a.vx];
+                [a.vy, b.vy] = [b.vy, a.vy];
+
+                // Empurrar para não grudar
+                let overlap = (TAMANHO - dist) / 2;
+                a.x += (dx/dist) * overlap;
+                a.y += (dy/dist) * overlap;
+            }
+        }
+    }
+}
+
+function atualizarPlacar() {
+    const cont = { pedra: 0, papel: 0, tesoura: 0 };
+    entidades.forEach(e => cont[e.tipo]++);
+    placar.innerHTML = `🪨 ${cont.pedra} | 📄 ${cont.papel} | ✂️ ${cont.tesoura}`;
+    
+    if (animando && (cont.pedra === 45 || cont.papel === 45 || cont.tesoura === 45)) {
+        animando = false;
+        setTimeout(() => alert("Temos um vencedor!"), 100);
+    }
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    entidades.forEach(e => e.desenhar());
+}
+
+function loop() {
+    if (!animando) return;
+    render();
+    entidades.forEach(e => e.atualizar());
+    verificarColisoes();
+    animationId = requestAnimationFrame(loop);
+}
+
+btnIniciar.onclick = () => {
+    if (!animando) {
+        animando = true;
+        loop();
+    }
+};
+
+btnResetar.onclick = () => {
+    inicializar();
+};
+
+// Start inicial
+inicializar();
+
+</script>
+</body>
+</html>
