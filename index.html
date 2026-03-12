@@ -3,49 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batalha Pedra Papel Tesoura</title>
+    <title>Batalha Jokenpô</title>
     <style>
         body { 
             margin: 0; 
-            /* Mudamos de hidden para auto para permitir o scroll se necessário */
             overflow-y: auto; 
-            background: #222; 
-            font-family: sans-serif; 
+            background: #1a1a1a; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
             min-height: 100vh;
+            color: white;
         }
         canvas { 
-            background: #333; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
-            margin-top: 20px; 
-            margin-bottom: 30px; /* Espaço extra na parte de baixo */
+            background: #222; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.7); 
+            margin: 20px 0;
+            border-radius: 8px;
             cursor: crosshair; 
-            max-width: 95vw; /* Garante que não estoure a largura em celulares */
+            max-width: 95vw;
         }
         #controles { 
-            color: white; 
-            padding: 15px; 
+            padding: 20px; 
             text-align: center; 
         }
+        .botoes {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
         button { 
-            padding: 12px 24px; 
+            padding: 12px 25px; 
             font-size: 16px; 
             cursor: pointer; 
-            background: #2ecc71; 
             border: none; 
             color: white; 
             border-radius: 5px; 
             font-weight: bold; 
-            transition: background 0.3s;
+            transition: transform 0.1s, background 0.3s;
         }
-        button:hover { 
-            background: #27ae60; 
-        }
+        button:active { transform: scale(0.95); }
+        #btnIniciar { background: #2ecc71; }
+        #btnIniciar:hover { background: #27ae60; }
+        #btnResetar { background: #e74c3c; }
+        #btnResetar:hover { background: #c0392b; }
         #placar {
-            font-size: 1.2rem;
-            margin-top: 10px;
+            font-size: 1.3rem;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-block;
         }
     </style>
 </head>
@@ -53,8 +62,11 @@
 
     <div id="controles">
         <h2>Simulação Jokenpô</h2>
-        <button id="btnIniciar">Reiniciar Batalha</button>
-        <p id="placar">Pedra: 20 | Papel: 20 | Tesoura: 20</p>
+        <div class="botoes">
+            <button id="btnIniciar">🚀 Iniciar Batalha</button>
+            <button id="btnResetar">🔄 Resetar Campo</button>
+        </div>
+        <p id="placar">Aguardando início...</p>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -63,32 +75,37 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const btnIniciar = document.getElementById('btnIniciar');
+const btnResetar = document.getElementById('btnResetar');
 const placar = document.getElementById('placar');
 
-// Configurações adaptáveis
-const TAMANHO_ICONE = 24;
-const VELOCIDADE = 2;
-const TOTAL_CADA = 20;
+const TAMANHO_ICONE = 26;
+const VELOCIDADE = 2.5;
+const TOTAL_CADA = 18;
 const ICONES = { pedra: '🪨', papel: '📄', tesoura: '✂️' };
 
 let entidades = [];
 let animando = false;
+let animationId;
 
-// Ajuste automático do tamanho do canvas
 function ajustarCanvas() {
-    canvas.width = Math.min(800, window.innerWidth * 0.9);
+    canvas.width = Math.min(800, window.innerWidth * 0.95);
     canvas.height = Math.min(500, window.innerHeight * 0.6);
 }
 
+window.addEventListener('resize', ajustarCanvas);
 ajustarCanvas();
 
 class Entidade {
-    constructor(tipo, x, y) {
+    constructor(tipo) {
         this.tipo = tipo; 
-        this.x = x;
-        this.y = y;
-        this.vx = (Math.random() - 0.5) * VELOCIDADE * 3;
-        this.vy = (Math.random() - 0.5) * VELOCIDADE * 3;
+        this.raio = TAMANHO_ICONE / 2;
+        // Posicionamento aleatório evitando as bordas
+        this.x = Math.random() * (canvas.width - TAMANHO_ICONE) + this.raio;
+        this.y = Math.random() * (canvas.height - TAMANHO_ICONE) + this.raio;
+        
+        const angulo = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angulo) * VELOCIDADE;
+        this.vy = Math.sin(angulo) * VELOCIDADE;
     }
 
     desenhar() {
@@ -102,30 +119,31 @@ class Entidade {
         this.x += this.vx;
         this.y += this.vy;
 
-        // Colisão com bordas
-        if (this.x < 15 || this.x > canvas.width - 15) this.vx *= -1;
-        if (this.y < 15 || this.y > canvas.height - 15) this.vy *= -1;
-        
-        // Garantir que não saiam do canvas
-        this.x = Math.max(15, Math.min(canvas.width - 15, this.x));
-        this.y = Math.max(15, Math.min(canvas.height - 15, this.y));
+        if (this.x <= this.raio || this.x >= canvas.width - this.raio) {
+            this.vx *= -1;
+            this.x = this.x <= this.raio ? this.raio : canvas.width - this.raio;
+        }
+        if (this.y <= this.raio || this.y >= canvas.height - this.raio) {
+            this.vy *= -1;
+            this.y = this.y <= this.raio ? this.raio : canvas.height - this.raio;
+        }
     }
 }
 
 function inicializar() {
+    cancelAnimationFrame(animationId);
+    animando = false;
     entidades = [];
     const tipos = ['pedra', 'papel', 'tesoura'];
     
     tipos.forEach(tipo => {
         for (let i = 0; i < TOTAL_CADA; i++) {
-            entidades.push(new Entidade(
-                tipo, 
-                Math.random() * (canvas.width - 60) + 30, 
-                Math.random() * (canvas.height - 60) + 30
-            ));
+            entidades.push(new Entidade(tipo));
         }
     });
+    
     atualizarPlacar();
+    render(); // Desenha o estado inicial parado
 }
 
 function verificarColisoes() {
@@ -140,13 +158,19 @@ function verificarColisoes() {
 
             if (distancia < TAMANHO_ICONE) {
                 resolverCombate(a, b);
-                // Inverter direção para efeito de ricochete
-                let tempVx = a.vx;
-                let tempVy = a.vy;
-                a.vx = b.vx;
-                a.vy = b.vy;
-                b.vx = tempVx;
-                b.vy = tempVy;
+
+                // Troca de vetores de velocidade (ricochete)
+                [a.vx, b.vx] = [b.vx, a.vx];
+                [a.vy, b.vy] = [b.vy, a.vy];
+
+                // Impedir sobreposição (afastamento físico)
+                let overlap = (TAMANHO_ICONE - distancia) / 2;
+                let nx = dx / distancia;
+                let ny = dy / distancia;
+                a.x += nx * overlap;
+                a.y += ny * overlap;
+                b.x -= nx * overlap;
+                b.y -= ny * overlap;
             }
         }
     }
@@ -154,12 +178,7 @@ function verificarColisoes() {
 
 function resolverCombate(a, b) {
     if (a.tipo === b.tipo) return;
-
-    const regras = {
-        pedra: 'tesoura', 
-        papel: 'pedra',   
-        tesoura: 'papel'  
-    };
+    const regras = { pedra: 'tesoura', papel: 'pedra', tesoura: 'papel' };
 
     if (regras[a.tipo] === b.tipo) {
         b.tipo = a.tipo; 
@@ -172,36 +191,44 @@ function resolverCombate(a, b) {
 function atualizarPlacar() {
     const contagem = { pedra: 0, papel: 0, tesoura: 0 };
     entidades.forEach(e => contagem[e.tipo]++);
-    placar.innerText = `Pedra: ${contagem.pedra} | Papel: ${contagem.papel} | Tesoura: ${contagem.tesoura}`;
+    
+    placar.innerHTML = `🪨 ${contagem.pedra} | 📄 ${contagem.papel} | ✂️ ${contagem.tesoura}`;
     
     const total = TOTAL_CADA * 3;
-    if (contagem.pedra === total || contagem.papel === total || contagem.tesoura === total) {
+    if (animando && (contagem.pedra === total || contagem.papel === total || contagem.tesoura === total)) {
         animando = false;
-        const vencedor = contagem.pedra === total ? "PEDRA" : contagem.papel === total ? "PAPEL" : "TESOURA";
-        setTimeout(() => alert(`Fim de jogo! ${vencedor} dominou o mundo!`), 100);
+        const vencedor = contagem.pedra === total ? "PEDRA 🪨" : contagem.papel === total ? "PAPEL 📄" : "TESOURA ✂️";
+        setTimeout(() => alert(`FIM DE JOGO!\nO império do(a) ${vencedor} começou!`), 100);
     }
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    entidades.forEach(e => e.desenhar());
 }
 
 function loop() {
     if (!animando) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    entidades.forEach(e => {
-        e.atualizar();
-        e.desenhar();
-    });
-
+    render();
+    entidades.forEach(e => e.atualizar());
     verificarColisoes();
-    requestAnimationFrame(loop);
+    animationId = requestAnimationFrame(loop);
 }
 
 btnIniciar.onclick = () => {
-    animando = false; // Para o loop atual se existir
-    setTimeout(() => {
-        inicializar();
-        animando = true;
-        loop();
-    }, 10);
+    if (animando) return; // Evita duplicar o loop
+    if (entidades.length === 0) inicializar();
+    animando = true;
+    loop();
 };
 
-//
+btnResetar.onclick = () => {
+    inicializar();
+};
+
+// Inicia o campo ao carregar a página
+inicializar();
+
+</script>
+</body>
+</html>
