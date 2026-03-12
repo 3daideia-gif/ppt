@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batalha Pedra Papel Tesoura</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        canvas { background: #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px; cursor: crosshair; }
+        #controles { color: white; padding: 15px; text-align: center; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #2ecc71; border: none; color: white; border-radius: 5px; font-weight: bold; }
+        button:hover { background: #27ae60; }
+    </style>
+</head>
+<body>
+
+    <div id="controles">
+        <h2>Simulação Jokenpô</h2>
+        <button id="btnIniciar">Iniciar Batalha</button>
+        <p id="placar">Pedra: 20 | Papel: 20 | Tesoura: 20</p>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const btnIniciar = document.getElementById('btnIniciar');
+const placar = document.getElementById('placar');
+
+// Configurações
+const TAMANHO_ICONE = 24;
+const VELOCIDADE = 2;
+const TOTAL_CADA = 20;
+const ICONES = { pedra: '🪨', papel: '📄', tesoura: '✂️' };
+
+let entidades = [];
+let animando = false;
+
+// Redimensionar canvas
+canvas.width = 800;
+canvas.height = 500;
+
+class Entidade {
+    constructor(tipo, x, y) {
+        this.tipo = tipo; // 'pedra', 'papel' ou 'tesoura'
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * VELOCIDADE * 2;
+        this.vy = (Math.random() - 0.5) * VELOCIDADE * 2;
+    }
+
+    desenhar() {
+        ctx.font = `${TAMANHO_ICONE}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(ICONES[this.tipo], this.x, this.y);
+    }
+
+    atualizar() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bater nas bordas
+        if (this.x < 10 || this.x > canvas.width - 10) this.vx *= -1;
+        if (this.y < 10 || this.y > canvas.height - 10) this.vy *= -1;
+    }
+}
+
+function inicializar() {
+    entidades = [];
+    const tipos = ['pedra', 'papel', 'tesoura'];
+    
+    tipos.forEach(tipo => {
+        for (let i = 0; i < TOTAL_CADA; i++) {
+            entidades.push(new Entidade(
+                tipo, 
+                Math.random() * (canvas.width - 40) + 20, 
+                Math.random() * (canvas.height - 40) + 20
+            ));
+        }
+    });
+}
+
+function verificarColisoes() {
+    for (let i = 0; i < entidades.length; i++) {
+        for (let j = i + 1; j < entidades.length; j++) {
+            let a = entidades[i];
+            let b = entidades[j];
+
+            let dx = a.x - b.x;
+            let dy = a.y - b.y;
+            let distancia = Math.sqrt(dx * dx + dy * dy);
+
+            if (distancia < TAMANHO_ICONE) {
+                resolverCombate(a, b);
+                // Pequeno empurrão para não grudarem
+                a.vx *= -1; a.vy *= -1;
+                b.vx *= -1; b.vy *= -1;
+            }
+        }
+    }
+}
+
+function resolverCombate(a, b) {
+    if (a.tipo === b.tipo) return;
+
+    const regras = {
+        pedra: 'tesoura', // pedra ganha de tesoura
+        papel: 'pedra',   // papel ganha de pedra
+        tesoura: 'papel'  // tesoura ganha de papel
+    };
+
+    if (regras[a.tipo] === b.tipo) {
+        b.tipo = a.tipo; // B vira o tipo de A
+    } else {
+        a.tipo = b.tipo; // A vira o tipo de B
+    }
+    atualizarPlacar();
+}
+
+function atualizarPlacar() {
+    const contagem = { pedra: 0, papel: 0, tesoura: 0 };
+    entidades.forEach(e => contagem[e.tipo]++);
+    placar.innerText = `Pedra: ${contagem.pedra} | Papel: ${contagem.papel} | Tesoura: ${contagem.tesoura}`;
+    
+    // Checar se alguém venceu tudo
+    if (contagem.pedra === 60 || contagem.papel === 60 || contagem.tesoura === 60) {
+        animando = false;
+        alert("Temos um vencedor!");
+    }
+}
+
+function loop() {
+    if (!animando) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    entidades.forEach(e => {
+        e.atualizar();
+        e.desenhar();
+    });
+
+    verificarColisoes();
+    requestAnimationFrame(loop);
+}
+
+btnIniciar.onclick = () => {
+    inicializar();
+    if (!animando) {
+        animando = true;
+        loop();
+    }
+};
+
+// Desenhar estado inicial
+inicializar();
+entidades.forEach(e => e.desenhar());
+
+</script>
+</body>
+</html>
